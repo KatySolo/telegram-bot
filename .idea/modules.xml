@@ -2,9 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/telebot.iml" filepath="$PROJECT_DIR$/.idea/modules/telebot.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/telebot-build.iml" filepath="$PROJECT_DIR$/.idea/modules/telebot-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/telegram_bot.iml" filepath="$PROJECT_DIR$/.idea/modules/telegram_bot.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/telegram_bot-build.iml" filepath="$PROJECT_DIR$/.idea/modules/telegram_bot-build.iml" />
     </modules>
   </component>
 </project>

@@ -4,7 +4,7 @@ import java.util.Date
 import scala.util.Try
 import scala.util.parsing.combinator._
 
-object command_executor extends RegexParsers {
+object CommandExecutor extends RegexParsers {
   private val id = Stream.from(1).iterator
   private val dateFormat = new SimpleDateFormat("hh:mm:ss yy:MM:dd")
 
