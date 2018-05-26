@@ -16,8 +16,9 @@ object command_executor extends RegexParsers {
   def createPoll: Parser[String] = "/create_poll" ~> anyWord ~ (anonymous | success(true)) ~
     (visibility | success(true)) ~ date ~ date ^^ {
       case name ~ anon ~ vis ~ start ~ stop =>
-        Poll(name, anon, vis, start, stop, id.next())
-        s"Your poll id: $id"
+        val poll = Poll(name, anon, vis, start, stop, id.next())
+        Polls += poll.id -> poll
+        s"Your poll id: ${poll.id}"
   }
 
   def simpleCommand: Parser[String] = "/" ~> ("delete_poll" | "start_poll" |
@@ -51,18 +52,18 @@ object command_executor extends RegexParsers {
   def visibility: Parser[Boolean] = "(" ~> ("afterstop" | "continuous") <~ ")" ^^ {_.toString == "afterstop"}
 
 
-//  def parse(action: String): Unit = {
-//    val commands = action.split(" ")
-//    commands(0) match {
-//      case "/create_poll" => create_poll(commands)
-//      case "/list" => get_list()
-//      case "/delete_poll" => delete_poll(commands(1).toInt)
-//      case "/start_poll" => start_poll(commands(1).toInt)
-//      case "/stop_poll" => stop_poll(commands(1).toInt)
-//      case "/result" => get_results(commands(1).toInt)
-//      case _ => println("Unknown command")
-//    }
-//  }
+  def parse(action: String): String = {
+    val commands = action.split(" ")
+    commands(0) match {
+      case "/create_poll" => create_poll(commands)
+      case "/list" => get_list()
+      case "/delete_poll" => delete_poll(commands(1).toInt)
+      case "/start_poll" => start_poll(commands(1).toInt)
+      case "/stop_poll" => stop_poll(commands(1).toInt)
+      case "/result" => get_results(commands(1).toInt)
+      case _ => "Unknown command"
+    }
+  }
 
   def create_poll(str: Array[String]): String = {
     val name = str(1)
