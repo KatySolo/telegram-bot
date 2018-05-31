@@ -4,16 +4,16 @@ import java.util.Date
 import scala.util.Try
 import scala.util.parsing.combinator._
 
-object command_executor extends RegexParsers {
+
+object CommandExecutor extends RegexParsers {
   private val id = Stream.from(1).iterator
   private val dateFormat = new SimpleDateFormat("hh:mm:ss yy:MM:dd")
 
   var Polls: Map[Int, Poll] = Map.empty
-  val Questions: Map[Int, Question] = Map.empty
+  
+  def command(userID: Long) = createPoll(userID) | simpleCommand(userID) | complexCommand | addQuestion(userID) | answer(userID)
 
-  def command = createPoll | simpleCommand | complexCommand | addQuestion
-
-  def createPoll: Parser[String] = "/create_poll" ~> anyWord ~ (anonymous | success(true)) ~
+  def createPoll(userID: Long): Parser[String] = "/create_poll" ~> anyWord ~ (anonymous | success(true)) ~
     (visibility | success(true)) ~ date ~ date ^^ {
       case name ~ anon ~ vis ~ start ~ stop =>
         val poll = Poll(name, anon, vis, start, stop, id.next())
@@ -21,7 +21,7 @@ object command_executor extends RegexParsers {
         s"Your poll id: ${poll.id}"
   }
 
-  def simpleCommand: Parser[String] = "/" ~> ("delete_poll" | "start_poll" |
+  def simpleCommand(userID: Long): Parser[String] = "/" ~> ("delete_poll" | "start_poll" |
     "stop_poll" | "result" | "begin" | "delete_question") ~ idx ^^ {
       case command ~ idx => command match {
         case "delete_poll" => delete_poll(idx)
@@ -29,7 +29,7 @@ object command_executor extends RegexParsers {
         case "result" => get_results(idx)
         case "stop_poll" => stop_poll(idx)
         case "begin" => begin(idx)
-        case "delete_question" => delete_question(idx)
+        case "delete_question" => delete_question(idx, userID)
       }
   }
 
@@ -39,44 +39,45 @@ object command_executor extends RegexParsers {
     case "view" => view()
   }
 
-  def addQuestion: Parser[String] = "/add_question" ~ anyWord ~ ("(" ~> ("open" | "choice" | "multi") <~ ")") ~
-    answers ^^ { case _ ~ name ~ questionType ~ answers => add_question(name, Question.GetValue(questionType), answers) }
+  def answer(userID: Long): Parser[String] = "/answer" ~ idx ~ anyWord ^^ { case _ ~ i ~ ans => answer(i, ans) }
+
+  def addQuestion(userID: Long): Parser[String] = "/add_question" ~ anyWord ~ ("(" ~> ("open" | "choice" | "multi") <~ ")") ~
+    answers ^^ { case _ ~ name ~ qType ~ answers => add_question(name, Question.GetValue(qType), answers, userID) }
 
   def date: Parser[Option[Date]] = ("(" ~> "\\d{2}:\\d{2}:\\d{2} \\d{2}:\\d{2}:\\d{2}".r <~ ")" | "".r) ^^ {
     date => Try(dateFormat.parse(date)).toOption }
 
   def answers: Parser[Array[String]] = ("(" ~> anyWord <~ ")").* ^^ {_.toArray}
-  def anyWord: Parser[String] = "(" ~> "[^)]*".r <~ ")" ^^ {_.toString}
+  def anyWord: Parser[String] = "(" ~> "[^)]*".r <~ ")"
   def idx: Parser[Int] = "(" ~> "\\d+".r <~ ")" ^^ {_.toInt}
-  def anonymous: Parser[Boolean] = "(" ~> ("yes" | "no") <~ ")" ^^ {_.toString == "yes"}
-  def visibility: Parser[Boolean] = "(" ~> ("afterstop" | "continuous") <~ ")" ^^ {_.toString == "afterstop"}
+  def anonymous: Parser[Boolean] = "(" ~> ("yes" | "no") <~ ")" ^^ {_ == "yes"}
+  def visibility: Parser[Boolean] = "(" ~> ("afterstop" | "continuous") <~ ")" ^^ {_ == "afterstop"}
 
+//  def parse(action: String): Parser[String] = {
+//    val commands = action.split(" ")
+//    commands(0) match {
+//      case "/create_poll" => create_poll(commands)
+//      case "/list" => get_list()
+//      case "/delete_poll" => delete_poll(commands(1).toInt)
+//      case "/start_poll" => start_poll(commands(1).toInt)
+//      case "/stop_poll" => stop_poll(commands(1).toInt)
+//      case "/result" => get_results(commands(1).toInt)
+//      case _ => "Unknown command"
+//    }
+//  }
 
-  def parse(action: String): String = {
-    val commands = action.split(" ")
-    commands(0) match {
-      case "/create_poll" => create_poll(commands)
-      case "/list" => get_list()
-      case "/delete_poll" => delete_poll(commands(1).toInt)
-      case "/start_poll" => start_poll(commands(1).toInt)
-      case "/stop_poll" => stop_poll(commands(1).toInt)
-      case "/result" => get_results(commands(1).toInt)
-      case _ => "Unknown command"
-    }
-  }
-
-  def create_poll(str: Array[String]): String = {
-    val name = str(1)
-    val anon = str.lift(2).getOrElse("yes") == "yes"
-    val AS = str.lift(3).getOrElse("afterstop") == "afterstop"
-    val start : Option[Date] = for(x <- str.lift(4)) yield dateFormat.parse(x)
-    val end : Option[Date] = for(x <- str.lift(5)) yield dateFormat.parse(x)
-
-    val poll = Poll(name, anon, AS, start, end, id.next())
-    Polls += poll.id -> poll
-
-    s"Your poll id: ${poll.id}"
-  }
+//  def create_poll(str: Array[String]): String = {
+//    val name = str(1)
+//    val anon = str.lift(2).getOrElse("yes") == "yes"
+//    val AS = str.lift(3).getOrElse("afterstop") == "afterstop"
+//    val start : Option[Date] = for(x <- str.lift(4)) yield dateFormat.parse(x)
+//    val end : Option[Date] = for(x <- str.lift(5)) yield dateFormat.parse(x)
+//
+//    val poll = Poll(name, anon, AS, start, end, id.next())
+//    Polls += poll.id -> poll
+//
+//    s"Your poll id: ${poll.id}"
+//  }
 
   def get_list(): String = Polls.values.mkString("\n")
 
@@ -103,22 +104,62 @@ object command_executor extends RegexParsers {
 
   def get_results(id: Int): String = {
     if (Polls.contains(id) && Polls(id).isRuned){
-      if (Polls(id).is_afterstop) "I can't get result until ending"
-      Questions.mkString("\n")
+      if (Polls(id).is_afterstop) "You can't get result until ending"
+//      Questions.mkString("\n") TODO
     }
     ???
   }
 
-  def add_question(str: String, value: Question.Value, strings: Array[String]) = {
+  private var contextId: Int = -1
+
+  def begin(i: Int): String = {
+    if (!Polls.contains(i)) "This poll doesn't exist"
+    contextId = i
+    s"You were switched to poll $i context"
+  }
+
+  def add_question(text: String, value: Question.Value, answers: Array[String], userID: Long): String = {
+    Polls.get(contextId) match {
+      case Some(p) =>
+        if (p.ownerID != userID) "You are not poll owner"
+        if (p.isRunning) "Sorry, poll is running"
+        val qId = id.next()
+        p.add_question(Question(text, value, answers.map(x => x -> (0, List.empty)).toMap, answers.toVector), qId)
+        s"Sucсess!\r\nPoll id: $contextId\r\nQuestion id: $qId"
+      case None => "Context mode disabled"
+    }
+  }
+
+  def delete_question(i: Int, userID: Long): String = {
+    Polls.get(contextId) match {
+      case Some(p) =>
+        if (p.ownerID != userID) "You are not poll owner"
+        if (p.isRunning) "Sorry, poll is running"
+        p.delete_question(i)
+        s"Sucсess!"
+      case None => "Context mode disabled"
+    }
+  }
+
+  def answer(i: Int, answer: String): String = {
+//    Polls.get(contextId) match {
+//      case Some(p) =>
+////        if (!p.isRunning) "Poll is not running"
+////        p.Questions.get(i) match { case Some(q) => q.answer(answer, userID) }
+//      case None => "Context mode disabled"
+//    }
     ???
   }
 
-  def begin(i: Int) = {???}
+  def view(): String = {
+    if (contextId < 0) "context mode disabled"
+    Polls.get(contextId).map(_.toString).getOrElse("Current poll doesn't exist")
+  }
 
-  def delete_question(i: Int) = {???}
-
-  def view() = {???}
-
-  def end() = {???}
-
+  def end(): String = {
+    if (contextId < 0) "context mode disabled"
+    val i = contextId
+    contextId = -1
+    s"Work with the poll $i is finished"
+  }
 }

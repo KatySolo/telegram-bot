@@ -11,7 +11,8 @@ object PollBot extends TelegramBot with Polling with Commands {
 
   override def receiveMessage(msg: Message): Unit = {
     for (text <- msg.text) {
-      val responseText = command_executor.parse(text)
+      val responseText = CommandExecutor.parse(CommandExecutor.command(msg.from.get.id), text).get
+//      val responseText = CommandExecutor.parse(text)
       request(SendMessage(msg.source, responseText))
     }
   }

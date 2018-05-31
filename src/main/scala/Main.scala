@@ -7,24 +7,20 @@ import info.mukel.telegrambot4s._
 
 object main {
   def main(args: Array[String]): Unit = {
-    PollBot.run()
-//    file_manager.read().foreach(x => command_executor.parse(x))
+//    PollBot.run()
 
+    val map: Map[Int, Poll] = Map()
 
-//    val map: Map[Int, Poll] = Map()
+//    FileManager.read().foreach(x => CommandExecutor.parse(CommandExecutor.command, x))
 
-//    file_manager.read().foreach(x => command_executor.parse(command_executor.command, x))
-
-//    fromFile("src/main/scala/input.txt").getLines
-//      .map(command_executor.parse(command_executor.command, _).get)
-//      .foldLeft(map)((m, str) => {
-////        val res = command_executor.parse_cmd(map, str)
-////        m += 1 -> str
-//        println(str)
-////        println(m)
-//        m
-//      })
-//      .foldLeft(map)(_+_)
+    FileManager.read()
+      .map(CommandExecutor.parse(CommandExecutor.command(5), _).get)
+      .foldLeft(map)((m, str) => {
+        println(str)
+//        println(m)
+        m
+      })
+      .foldLeft(map)(_+_)
 
   }
 }
