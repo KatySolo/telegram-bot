@@ -5,7 +5,7 @@ import CommandExecutor._
 
 import scala.util.Try
 
-class CommandExecutorTest extends FlatSpec with  BeforeAndAfterEach {
+class CommandExecutorTest extends FlatSpec with BeforeAndAfterEach {
 
   override def afterEach(): Unit = {
     Polls = Map.empty
@@ -59,7 +59,7 @@ class CommandExecutorTest extends FlatSpec with  BeforeAndAfterEach {
   it should "show results of currently running poll" in {
     instructionExecutor(165755238, List("/create_poll (my_poll)",
                                 "/begin (8)",
-                                "/add_question (Куда идем завтра((пятница))?) (choice)/n В бар!/n В кино!/n Сидим в офисе",
+                                "/add_question (Куда идем завтра((пятница))?) (choice)\n В бар!\n В кино!\n Сидим в офисе",
                                 "/end",
                                 "/start_poll (8)"))
     instructionExecutor(666, List("/begin (8)",
@@ -71,9 +71,10 @@ class CommandExecutorTest extends FlatSpec with  BeforeAndAfterEach {
   it should "show results of finished polls" in {
     instructionExecutor(165755238, List("/create_poll (my_poll)",
                                 "/begin (9)",
-                                "/add_question (Куда идем завтра((пятница))?) (choice)/n В бар!/n В кино!/n Сидим в офисе",
+                                "/add_question (Куда идем завтра((пятница))?) (choice)\n В бар!\n В кино!\n Сидим в офисе",
                                 "/end",
                                 "/start_poll (9)"))
+    val p = Polls
     instructionExecutor(165755238, List("/stop_poll (9)"))
     val result = CommandExecutor.parse(CommandExecutor.command(666), "/view").get
     assert (result == "poll results")
@@ -81,7 +82,7 @@ class CommandExecutorTest extends FlatSpec with  BeforeAndAfterEach {
   it should "not be able to change poll after start" in {
     instructionExecutor(165755238, List("/create_poll (my_poll)",
                                 "/begin (10)",
-                                "/add_question (Куда идем завтра((пятница))?) (choice)/n В бар!/n В кино!/n Сидим в офисе",
+                                "/add_question (Куда идем завтра((пятница))?) (choice)\n В бар!\n В кино!\n Сидим в офисе",
                                 "/end",
                                 "/start_poll (10)",
                                 "/begin (10)"))
@@ -92,22 +93,22 @@ class CommandExecutorTest extends FlatSpec with  BeforeAndAfterEach {
   it should "add new question in poll" in {
     instructionExecutor(1, List("/create_poll (my_poll)",
                                 "/begin (11)",
-                                "/add_question (Куда идем завтра((пятница))?) (choice)/n В бар!/n В кино!/n Сидим в офисе"))
-    val pollQuestions = Polls(12).Questions(1)
+                                "/add_question (Куда идем завтра((пятница))?) (choice)\n В бар!\n В кино!\n Сидим в офисе"))
+    val pollQuestions = Polls(11).Questions(11)
 //    assert (pollQuestions)
   }
 
   it should "delete question from poll" in {
     instructionExecutor(165755238, List("/create_poll (my_poll)",
       "/begin (12)",
-      "/add_question (Куда идем завтра((пятница))?) (choice)/n В бар!/n В кино!/n Сидим в офисе",
+      "/add_question (Куда идем завтра((пятница))?) (choice)\n В бар!\n В кино!\n Сидим в офисе",
       "/delete_question (1)"))
   }
 
   it should "answer question in the poll" in {
     instructionExecutor(165755238, List("/create_poll (my_poll)",
                                 "/begin (13)",
-                                "/add_question (Куда идем завтра((пятница))?) (choice)/n В бар!/n В кино!/n Сидим в офисе",
+                                "/add_question (Куда идем завтра((пятница))?) (choice)\n В бар!\n В кино!\n Сидим в офисе",
                                 "/end",
                                 "/start_poll (13)"))
     instructionExecutor(666, List("/begin (13)",
@@ -152,7 +153,7 @@ class CommandExecutorTest extends FlatSpec with  BeforeAndAfterEach {
 ////  - участвовать можно только в активных опросах (опросы которые были начаты, но еще не завершены)
 //  - после старта опроса изменять его нельзя!
 
-def instructionExecutor(id: Int,in: List[String]): Unit = {
-  in.map(CommandExecutor.parse(CommandExecutor.command(id), _))
-}
+  def instructionExecutor(id: Int, in: List[String]): Unit = {
+    in.map(CommandExecutor.parse(CommandExecutor.command(id), _))
+  }
 }

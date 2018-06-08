@@ -10,7 +10,7 @@ object CommandExecutor extends RegexParsers {
   private val dateFormat = new SimpleDateFormat("hh:mm:ss yy:MM:dd")
 
   var Polls: Map[Int, Poll] = Map.empty
-  
+
   def command(userID: Long) = createPoll(userID) | simpleCommand(userID) | complexCommand | addQuestion(userID) | answer(userID)
 
   def createPoll(userID: Long): Parser[String] = "/create_poll" ~> anyWord ~ (anonymous | success(true)) ~
@@ -41,13 +41,14 @@ object CommandExecutor extends RegexParsers {
 
   def answer(userID: Long): Parser[String] = "/answer" ~ idx ~ anyWord ^^ { case _ ~ i ~ ans => answer(i, ans) }
 
-  def addQuestion(userID: Long): Parser[String] = "/add_question" ~ anyWord ~ ("(" ~> ("open" | "choice" | "multi") <~ ")") ~
-    answers ^^ { case _ ~ name ~ qType ~ answers => add_question(name, Question.GetValue(qType), answers, userID) }
+  def addQuestion(userID: Long): Parser[String] = "/add_question" ~> question ~ ("(" ~> ("open" | "choice" | "multi") <~ ")").? ~
+    answers ^^ { case name ~ qType ~ answers => add_question(name, Question.GetValue(qType.getOrElse("open")), answers, userID) }
 
   def date: Parser[Option[Date]] = ("(" ~> "\\d{2}:\\d{2}:\\d{2} \\d{2}:\\d{2}:\\d{2}".r <~ ")" | "".r) ^^ {
     date => Try(dateFormat.parse(date)).toOption }
 
-  def answers: Parser[Array[String]] = ("(" ~> anyWord <~ ")").* ^^ {_.toArray}
+  def answers: Parser[Array[String]] = ".+".r.* ^^ {_.map(_.trim()).toArray}
+  def question: Parser[String] = "\\(((\\(\\()|(\\)\\))|[^()])*\\)".r ^^ {q => q.substring(1, q.length - 1).replace("((", "(").replace("))", ")")}
   def anyWord: Parser[String] = "(" ~> "[^)]*".r <~ ")"
   def idx: Parser[Int] = "(" ~> "\\d+".r <~ ")" ^^ {_.toInt}
   def anonymous: Parser[Boolean] = "(" ~> ("yes" | "no") <~ ")" ^^ {_ == "yes"}
@@ -118,12 +119,19 @@ object CommandExecutor extends RegexParsers {
     s"You were switched to poll $i context"
   }
 
+  def end(): String = {
+    if (contextId < 0) "context mode disabled"
+    val i = contextId
+    contextId = -1
+    s"Work with the poll $i is finished"
+  }
+
   def add_question(text: String, value: Question.Value, answers: Array[String], userID: Long): String = {
     Polls.get(contextId) match {
       case Some(p) =>
         if (p.ownerID != userID) "You are not poll owner"
         if (p.isRunning) "Sorry, poll is running"
-        val qId = id.next()
+        val qId = /*id.next()*/ p.id
         p.add_question(Question(text, value, answers.map(x => x -> (0, List.empty)).toMap, answers.toVector), qId)
         s"Sucсess!\r\nPoll id: $contextId\r\nQuestion id: $qId"
       case None => "Context mode disabled"
@@ -154,12 +162,5 @@ object CommandExecutor extends RegexParsers {
   def view(): String = {
     if (contextId < 0) "context mode disabled"
     Polls.get(contextId).map(_.toString).getOrElse("Current poll doesn't exist")
-  }
-
-  def end(): String = {
-    if (contextId < 0) "context mode disabled"
-    val i = contextId
-    contextId = -1
-    s"Work with the poll $i is finished"
   }
 }
