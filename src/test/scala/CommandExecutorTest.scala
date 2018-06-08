@@ -74,7 +74,6 @@ class CommandExecutorTest extends FlatSpec with BeforeAndAfterEach {
                                 "/add_question (Куда идем завтра((пятница))?) (choice)\n В бар!\n В кино!\n Сидим в офисе",
                                 "/end",
                                 "/start_poll (9)"))
-    val p = Polls
     instructionExecutor(165755238, List("/stop_poll (9)"))
     val result = CommandExecutor.parse(CommandExecutor.command(666), "/view").get
     assert (result == "poll results")
