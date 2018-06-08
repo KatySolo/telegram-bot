@@ -4,7 +4,7 @@ case class Poll(name: String, anonymous: Boolean, is_afterstop: Boolean, start: 
   var isRunning: Boolean = isRun.getOrElse(false)
   var Questions: Map[Int, Question] = Map.empty
 
-  val ownerID: Long = -12345
+  val ownerID: Long = 1
 
   private def isRun: Option[Boolean] = for (x <- start; y <- end; now = new Date())
     yield (now after x) && (now before y)
