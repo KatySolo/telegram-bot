@@ -17,7 +17,7 @@ class CommandExecutorTest extends FlatSpec with  BeforeAndAfterEach {
     val end = "08:00:00 05:09:01"
     val dateFormat = new SimpleDateFormat("hh:mm:ss yy:MM:dd")
 
-    CommandExecutor.parse(CommandExecutor.command(1),
+    CommandExecutor.parse(CommandExecutor.command(165755238),
       "/create_poll (my_poll_t1) (no) (continuous) ("+start+") ("+ end+")")
     val poll = Polls(1)
     assert (poll.name == "my_poll_t1")
@@ -29,24 +29,24 @@ class CommandExecutorTest extends FlatSpec with  BeforeAndAfterEach {
   }
 
   it should "give each poll unique ID" in {
-    CommandExecutor.parse(CommandExecutor.command(1), "/create_poll (my_poll_t2)")
-    CommandExecutor.parse(CommandExecutor.command(1), "/create_poll (my_poll_t2)")
+    CommandExecutor.parse(CommandExecutor.command(165755238), "/create_poll (my_poll_t2)")
+    CommandExecutor.parse(CommandExecutor.command(165755238), "/create_poll (my_poll_t2)")
     val result = Polls(2).id
     assert (result != Polls(3).id)
   }
 
   it should "have no effect after try to stop not started poll" in {
-    CommandExecutor.parse(CommandExecutor.command(1), "/create_poll (my_poll_t3)")
-    CommandExecutor.parse(CommandExecutor.command(1), "/stop_poll (4)")
+    CommandExecutor.parse(CommandExecutor.command(165755238), "/create_poll (my_poll_t3)")
+    CommandExecutor.parse(CommandExecutor.command(165755238), "/stop_poll (4)")
     assert(!Polls(4).isRunning)
 
   }
 
   it should "stop started poll" in {
-    CommandExecutor.parse(CommandExecutor.command(1), "/create_poll (my_poll_t5)")
-    CommandExecutor.parse(CommandExecutor.command(1), "/stop_poll (5)")
+    CommandExecutor.parse(CommandExecutor.command(165755238), "/create_poll (my_poll_t5)")
+    CommandExecutor.parse(CommandExecutor.command(165755238), "/stop_poll (5)")
     assert(!Polls(5).isRunning)
-    CommandExecutor.parse(CommandExecutor.command(1), "/stop_poll (5)")
+    CommandExecutor.parse(CommandExecutor.command(165755238), "/stop_poll (5)")
     assert(!Polls(5).isRunning)
   }
 //
@@ -57,7 +57,7 @@ class CommandExecutorTest extends FlatSpec with  BeforeAndAfterEach {
   }
 //
   it should "show results of currently running poll" in {
-    instructionExecutor(1, List("/create_poll (my_poll)",
+    instructionExecutor(165755238, List("/create_poll (my_poll)",
                                 "/begin (8)",
                                 "/add_question (Куда идем завтра((пятница))?) (choice)/n В бар!/n В кино!/n Сидим в офисе",
                                 "/end",
@@ -69,17 +69,17 @@ class CommandExecutorTest extends FlatSpec with  BeforeAndAfterEach {
   }
 //
   it should "show results of finished polls" in {
-    instructionExecutor(1, List("/create_poll (my_poll)",
+    instructionExecutor(165755238, List("/create_poll (my_poll)",
                                 "/begin (9)",
                                 "/add_question (Куда идем завтра((пятница))?) (choice)/n В бар!/n В кино!/n Сидим в офисе",
                                 "/end",
                                 "/start_poll (9)"))
-    instructionExecutor(1, List("/stop_poll (9)"))
+    instructionExecutor(165755238, List("/stop_poll (9)"))
     val result = CommandExecutor.parse(CommandExecutor.command(666), "/view").get
     assert (result == "poll results")
   }
   it should "not be able to change poll after start" in {
-    instructionExecutor(1, List("/create_poll (my_poll)",
+    instructionExecutor(165755238, List("/create_poll (my_poll)",
                                 "/begin (10)",
                                 "/add_question (Куда идем завтра((пятница))?) (choice)/n В бар!/n В кино!/n Сидим в офисе",
                                 "/end",
@@ -98,14 +98,14 @@ class CommandExecutorTest extends FlatSpec with  BeforeAndAfterEach {
   }
 
   it should "delete question from poll" in {
-    instructionExecutor(1, List("/create_poll (my_poll)",
+    instructionExecutor(165755238, List("/create_poll (my_poll)",
       "/begin (12)",
       "/add_question (Куда идем завтра((пятница))?) (choice)/n В бар!/n В кино!/n Сидим в офисе",
       "/delete_question (1)"))
   }
 
   it should "answer question in the poll" in {
-    instructionExecutor(1, List("/create_poll (my_poll)",
+    instructionExecutor(165755238, List("/create_poll (my_poll)",
                                 "/begin (13)",
                                 "/add_question (Куда идем завтра((пятница))?) (choice)/n В бар!/n В кино!/n Сидим в офисе",
                                 "/end",
